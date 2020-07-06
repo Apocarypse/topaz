@@ -1724,11 +1724,9 @@ namespace battleutils
                 }
 
                 // Inquartata grants a flat parry rate bonus.
-                if (CCharEntity* PChar = dynamic_cast<CCharEntity*>(PDefender))
-                {
-                    int16 inquartataBonus = PChar->getMod(Mod::INQUARTATA);
-                    parryRate += inquartataBonus;
-                }
+                int16 inquartataBonus = PDefender->getMod(Mod::INQUARTATA);
+                parryRate += inquartataBonus;
+
                 return parryRate;
             }
         }
