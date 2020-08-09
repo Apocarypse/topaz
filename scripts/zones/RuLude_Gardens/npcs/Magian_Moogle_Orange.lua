@@ -9,6 +9,8 @@ require("scripts/globals/keyitems")
 local ID = require("scripts/zones/RuLude_Gardens/IDs")
 require("scripts/globals/magiantrials")
 -----------------------------------
+tpz = tpz or {}
+tpz.magian = tpz.magian or {}
 
 function onTrade(player, npc, trade)
     if (trade:getItemCount() == 1) then

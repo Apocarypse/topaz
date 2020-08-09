@@ -112,6 +112,7 @@ function onEventFinish(player, csid, option)
         ItemID = 21283
     end
 
+    itemId = optionTable[option]
     if (option ~= 1073741824) then
         if (player:getFreeSlotsCount() >= 1 and player:hasItem(ItemID) == false) then
             player:addItem(ItemID, 1)
