@@ -6,6 +6,7 @@
 -----------------------------------------------------
 require("scripts/globals/zone")
 require("scripts/globals/msg")
+require("scripts/globals/npc_util")
 require("scripts/globals/regimes")
 
 tpz = tpz or {}
@@ -1246,22 +1247,22 @@ function tpz.hunts.onTrigger(player,npc,event)
     local huntId = player:getCharVar("[hunt]id")
     local huntStatus = player:getCharVar("[hunt]status")
     local scyldBits = bit.lshift(player:getCurrency("scyld"), 14)
-    local lockBit = bit.lshift(1, 24)
+    local lockBit = 0
 
-    -- one vana'diel day lockout timer after completing a hunt
-    if os.time() < player:getCharVar("[hunt]nextHunt") then
-        scyldBits = scyldBits + lockBit
     -- [hunt]status 1 player has already accepted a hunt
-    elseif huntStatus == 1 then
+    if huntStatus == 1 then
         local pageBits = bit.lshift(huntId, 4)
         scyldBits = scyldBits + pageBits + 0x0002 -- bit displays hunt active menu
     -- [hunt]status 2 player has completed a hunt
     elseif huntStatus == 2 then
         local pageBits = bit.lshift(huntId, 4)
         scyldBits = scyldBits + pageBits + 0x000A -- bit displays completion menu
+        if player:getFreeSlotsCount() < 4 then
+            player:PrintToPlayer("Please check your inventory space. You may miss out on rewards!")
+        end
     -- stops player from taking a hunt if a regime is active
-    elseif player:getCharVar("[regime]id") >= 1 then
-        scyldBits = scyldBits + 0x0001 -- bit displays regime active menu
+    --[[elseif player:getCharVar("[regime]id") >= 1 then
+        scyldBits = scyldBits + 0x0001 -- bit displays regime active menu]]
     end
 
     player:startEvent(1500, scyldBits, zone[player:getZoneID()].huntMenu[1])
@@ -1298,11 +1299,82 @@ tpz.hunts.clearHuntVars = function(player)
     player:setCharVar("[hunt]status", 0)
 end
 
+local rewardList =
+{
+    [1] = { 12668,12661,12616,12599,12615,12607,12463,12527,12542,12534,12487,12695,
+            12744,12784,12775,12774,12768,12823,12897,12908,12899,12898,12863,12983,
+            12951,12971,13031,13037,13024 },
+
+    [2] = { 12528,12471,12530,12536,12536,13833,13826,12480,12537,15208,12664,12591,
+            12626,13716,13697,12624,14447,13725,12770,12773,12729,12788,12785,12777,
+            14054,13953,12896,12892,12901,12912,12909,12902,15405,12917,13027,13030,
+            12991,13042,13038,11412,15344,10648,14206,14314,14841,13818,15147 },
+
+    [3] = { 13827,12535,12524,15169,12532,12479,15171,15166,12539,15172,13824,13717,
+            12669,12662,14433,12665,12627,14435,14427,12671,14434,13707,12789,12776,
+            12769,14862,12771,14025,12782,14863,14859,12781,15058,14865,12786,12913,
+            12900,12890,14331,12893,12906,14332,14328,12905,14333,12910,13043,13032,
+            13025,14133,15319,13028,14135,13022,15321,15316,13035,14207,13039 },
+
+    [4] = { 12525,12538,12533,13872,12481,13834,13831,13751,12670,13797,12663,12625,
+            12666,13784,13709,13726,11348,13724,12780,12718,12779,12772,14002,12787,
+            12793,12791,12904,12891,12903,12894,12911,12918,12916,14244,13040,13026,
+            13029,13034,14119,13041,13023,13046 },
+
+    [5] = { 13883,13865,13829,13832,13835,13874,12541,13847,13844,15243,13753,13710,
+            13714,12667,13769,13727,13786,13696,13737,13733,14499,12651,13980,12790,
+            14052,13996,12792,13982,12795,14004,12783,13958,13955,12794,14908,14445,
+            15206,14236,12914,15403,12895,12919,12907,14211,12925,15579,14246,12926,
+            14165,13044,13047,14121,13049,13036,14086,14082,14112,13050,15664 },
+
+    [6] = { 16080,13843,13851,12482,13701,16067,12439,11498,13848,13854,16068,13799,
+            14543,12652,14529,13734,11349,13739,13745,14528,13755,13735,13749,13743,
+            13741,13738,13984,14956,13954,14939,13956,13960,14027,13976,14938,13959,
+            15621,14255,12927,16377,14208,14213,15607,14209,14212,15707,14081,15694,
+            14083,14088,15693,14104,14084,15739,14087,11373 },
+
+    [7] = { 13879,13886,13859,13863,12423,13861,13866,16112,16131,12483,13864,12461,
+            13858,13860,13862,15156,13919,15187,15193,13867,13790,11351,11350,11352,
+            11353,13802,13777,12628,13761,13765,13763,14572,13756,12589,13766,14285,
+            13774,13780,13776,13793,14417,13773,14438,13768,13762,14439,14540,14366,
+            13758,13771,13770,13764,14009,14000,13994,13997,13990,13992,15059,14942,
+            14994,13995,12717,13999,13989,13991,14012,13993,14849,14877,14878,14883,
+            14057,13986,14074,13998,14237,15654,14232,14240,14256,14230,14234,14229,
+            14235,14239,14231,14252,15393,14289,14318,15394,15399,14279,14238,14233,
+            14115,14167,14136,14108,14106,14110,15697,14105,14111,14131,14114,14107,
+            11375,14127,14109,15331,15306,11380,15332,15337,14159,14113 },
+
+    [8] = { 15158,16105,13888,15192,13938,13930,16074,13944,13943,13926,15154,15191,
+            13923,13937,15160,13949,13951,15210,13921,14419,14545,14383,14567,14442,
+            14441,14391,13747,14538,14381,14377,14415,13746,14373,14390,14421,13817,
+            14449,13941,14011,14851,14982,14882,14825,14829,14950,14079,14820,14881,
+            14824,14828,14853,14056,15646,15401,15619,14320,15398,14307,14313,15616,
+            14302,14300,14316,15397,14306,14322,14312,15407,15308,15732,15336,14197,
+            14188,15340,14194,15704,14183,14179,15304,15335,14187,15310,14193,14192,
+            15346 }
+}
+
+function tpz.hunts.onTrade(player, npc, trade)
+    for i = 1, 8 do
+        if rewardList[i].trade then
+            if npcUtil.tradeHas(trade, { rewardList[i][trade], { "gil", 500 } }) then
+                npcUtil.giveItem(player, { rewardList[i].trade })
+
+            elseif npcUtil.tradeHas(trade, { rewardList[i][trade], { "gil", 1000 } }) then
+                npcUtil.giveItem(player, { rewardList[i][math.random(1,#rewardList[i])] })
+            end
+        end
+    end
+end
+
+local augs = { 512,513,514,515,516,517,518,550,551,552,553,554,555,556,557,558,559 }
+
 function tpz.hunts.onEventFinish(player, csid, option)
     local zoneid = player:getZoneID()
     local registryZone = zone[zoneid]
     local huntEntry = hunts[bit.rshift(option, 3)]
     local msg = zones[zoneid].text
+    local mLvl = player:getCharVar("[hunt]lvl")
 
     -- accepting hunt
     if huntEntry then
@@ -1311,6 +1383,10 @@ function tpz.hunts.onEventFinish(player, csid, option)
         player:delCurrency("scyld", huntEntry.fee)
         player:messageSpecial(msg.HUNT_ACCEPTED)
         player:messageSpecial(msg.USE_SCYLDS, huntEntry.fee, player:getCurrency("scyld"))
+        player:setCharVar("[hunt]x", player:getXPos())
+        player:setCharVar("[hunt]y", player:getYPos())
+        player:setCharVar("[hunt]z", player:getZPos())
+        player:setCharVar("[hunt]zone", player:getZoneID())
 
     -- cancels hunt
     elseif option == 3 then
@@ -1326,8 +1402,83 @@ function tpz.hunts.onEventFinish(player, csid, option)
     elseif option == 5 then
         local huntId = player:getCharVar("[hunt]id")
         local scyldBounty = hunts[huntId].bounty
+        local reward = 0
+
+        if player:getMainJob() ~= player:getCharVar("[hunt]job") then
+            player:PrintToPlayer("Hunts may only be completed on the job you defeated the target as.", 13)
+            return
+        end
+
+        if mLvl < 11 then
+            reward = 1
+        elseif mLvl > 10 and mLvl < 21 then
+            reward = 2
+        elseif mLvl > 20 and mLvl < 31 then
+            reward = 3
+        elseif mLvl > 30 and mLvl < 41 then
+            reward = 4
+        elseif mLvl > 40 and mLvl < 51 then
+            reward = 5
+        elseif mLvl > 50 and mLvl < 61 then
+            reward = 6
+        elseif mLvl > 60 and mLvl < 71 then
+            reward = 7
+        else
+            reward = 8
+        end
+
         -- give player evoliths here
-        player:setCharVar("[hunt]nextHunt", getVanaMidnight())
+
+        local t = rewardList[reward]
+
+        if (reward == 1 or reward == 2) then
+            local r1 = math.random(1, #t)
+            local aug1 = augs[math.random(1,#augs)]
+            local val1 = math.random(0,2)
+            player:addItem(t[r1],1,aug1,val1)
+        elseif (reward == 3 or reward == 4) then
+            local r1 = math.random(1, #t)
+            local r2 = math.random(1, #t)
+            local aug1 = augs[math.random(1,#augs)]
+            local aug2 = augs[math.random(1,#augs)]
+            local val1 = math.random(0,2)
+            local val2 = math.random(0,2)
+            player:addItem(t[r1],1,aug1,val1,aug2,val2)
+            player:addItem(t[r2],1,aug1,val1,aug2,val2)
+        elseif (reward == 5 or reward == 6) then
+            local r1 = math.random(1, #t)
+            local r2 = math.random(1, #t)
+            local r3 = math.random(1, #t)
+            local aug1 = augs[math.random(1,#augs)]
+            local aug2 = augs[math.random(1,#augs)]
+            local aug3 = augs[math.random(1,#augs)]
+            local val1 = math.random(0,2)
+            local val2 = math.random(0,2)
+            local val3 = math.random(0,2)
+            player:addItem(t[r1],1,aug1,val1,aug2,val2,aug3,val3)
+            player:addItem(t[r2],1,aug1,val1,aug2,val2,aug3,val3)
+            player:addItem(t[r3],1,aug1,val1,aug2,val2,aug3,val3)
+        elseif (reward == 7 or reward == 8) then
+            local r1 = math.random(1, #t)
+            local r2 = math.random(1, #t)
+            local r3 = math.random(1, #t)
+            local r4 = math.random(1, #t)
+            local aug1 = augs[math.random(1,#augs)]
+            local aug2 = augs[math.random(1,#augs)]
+            local aug3 = augs[math.random(1,#augs)]
+            local aug4 = augs[math.random(1,#augs)]
+            local val1 = math.random(0,2)
+            local val2 = math.random(0,2)
+            local val3 = math.random(0,2)
+            local val4 = math.random(0,2)
+            player:addItem(t[r1],1,aug1,val1,aug2,val2,aug3,val3,aug4,val4)
+            player:addItem(t[r2],1,aug1,val1,aug2,val2,aug3,val3,aug4,val4)
+            player:addItem(t[r3],1,aug1,val1,aug2,val2,aug3,val3,aug4,val4)
+            player:addItem(t[r4],1,aug1,val1,aug2,val2,aug3,val3,aug4,val4)
+        else
+            return
+        end
+
         tpz.hunts.clearHuntVars(player)
 
         -- scylds cap at 1000
@@ -1338,15 +1489,28 @@ function tpz.hunts.onEventFinish(player, csid, option)
         end
         player:messageSpecial(msg.HUNT_RECORDED)
         player:messageSpecial(msg.OBTAIN_SCYLDS, scyldBounty, player:getCurrency("scyld"))
+        player:PrintToPlayer("You have received high-quality equipment!", 13)
+        player:addExp(player:getCharVar("[hunt]lvl") * 100)
+        player:setCharVar("[hunt]lvl", 0)
+        player:setCharVar("[hunt]job", 0)
+        player:setCharVar("[hunt]x", 0)
+        player:setCharVar("[hunt]y", 0)
+        player:setCharVar("[hunt]z", 0)
+        player:setCharVar("[hunt]zone", 0)
     end
 end
 
 function tpz.hunts.checkHunt(mob, player, mobHuntID)
     local playerHuntID = player:getCharVar("[hunt]id")
+    local mLvl = mob:getMainLvl()
+
+    player:setCharVar("[hunt]lvl", mLvl)
+    player:setCharVar("[hunt]job", player:getMainJob())
 
     -- required NM has been defeated
     if player:getCharVar("[hunt]status") == 1 and playerHuntID == mobHuntID then
         player:messageBasic(tpz.msg.basic.FOV_DEFEATED_TARGET + 20)
         player:setCharVar("[hunt]status", 2)
+        player:PrintToPlayer("To fast travel back to the Hunt Registry, type !hunt.", 13)
     end
 end
