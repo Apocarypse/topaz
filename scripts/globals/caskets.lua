@@ -115,7 +115,7 @@ local function timeElapsedCheck(npc)
     if npc:getLocalVar("[caskets]SPAWNTIME") then
         spawnTime = npc:getLocalVar("[caskets]SPAWNTIME")
     end
-    
+
     local lastSpawned = os.time() - spawnTime
 
     timeTable = convertTime(lastSpawned)
@@ -217,7 +217,7 @@ local function setCasketData(player, x, y, z, r, npc, partyID, mobLvl)
     ---------------------------------------------------------------------------------------------------
     local typeChance       = math.random()
     local chestId          = npc:getID()
-    local chestStyle       = 965
+    local chestStyle       = 966
     local correctNum       = math.random(10, 99)
     local attempts         = math.random(4, 6)
     local kupowersBonus    = 0
@@ -225,12 +225,6 @@ local function setCasketData(player, x, y, z, r, npc, partyID, mobLvl)
     -- if player:hasStatusEffect(tpz.effect.KUPOWERS_MYRIAD_MYSTERY_BOXES) then    -- Super Kupowers Myriad Mystery Boxes not implimented yet.
     --     kupowersBonus = 0.2
     -- end
-
-    if typeChance < 0.2 + kupowersBonus then
-        chestStyle = 966 -- Brown locked
-    else
-        chestStyle = 965 -- Blue
-    end
 
     if npc ~= nil then
         npc:resetLocalVars()
@@ -244,10 +238,7 @@ local function setCasketData(player, x, y, z, r, npc, partyID, mobLvl)
         npc:setLocalVar("[caskets]MOBLVL", mobLvl)
 
         if chestStyle == 966 then
-            npc:setLocalVar("[caskets]ATTEMPTS", attempts)
-            npc:setLocalVar("[caskets]CORRECT_NUM", correctNum)
-            npc:setLocalVar("[caskets]FAILED_ATEMPTS", 0)
-            npc:setLocalVar("[caskets]LOCKED", 1)
+            npc:setLocalVar("[caskets]LOCKED", 0)
             npc:setLocalVar("[caskets]LOOT_TYPE", 2)
             npc:setLocalVar("[caskets]HINTS_TABLE", 1234567)
         else
@@ -378,9 +369,6 @@ end
 ------------------------------------------------------------------------------------------------
 local function setItems(npc, item1, item2, item3, item4)
     npc:setLocalVar("[caskets]ITEM1", item1)
-    npc:setLocalVar("[caskets]ITEM2", item2)
-    npc:setLocalVar("[caskets]ITEM3", item3)
-    npc:setLocalVar("[caskets]ITEM4", item4)
     npc:setLocalVar("[caskets]ITEMS_SET", 1)
 end
 
@@ -596,6 +584,15 @@ local function giveItem(player, npc, itemNum)
     local ID          = zones[zoneId]
     local spawnStatus = npc:getLocalVar("[caskets]SPAWNSTATUS")
 
+    local augs = { 512,513,514,515,516,517,518 }
+    local aug = math.random(1, #augs)
+    local random = math.random(0,100)
+    local val = 0
+    if random > 90 then
+        val = 1
+    end
+
+
     if spawnStatus == casketInfo.spawnStatus.DESPAWNED then
         return
     end
@@ -616,7 +613,7 @@ local function giveItem(player, npc, itemNum)
                         checkItemChestIsEmpty(npc)
                     end
                 else
-                    if player:addItem(itemID) then
+                    if player:addItem(itemID,1,augs[aug],val) then
                         messageChest(player, "PLAYER_OBTAINS_ITEM", itemID, 0, 0, 0)
                         npc:setLocalVar(itemQuery, 0)
                          checkItemChestIsEmpty(npc)

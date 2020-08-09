@@ -992,10 +992,10 @@ end
 
 tpz.regime.bookOnTrigger = function(player, regimeType)
      -- checks if hunt is active, if so prompts player to cancel
-  if player:getCharVar("[hunt]status") >= 1 then
-     player:startEvent(info.event, 0, 0, 3, 1, 0, 0, player:getCurrency("valor_point"), player:getCharVar("[hunt]page"))
+  --[[if player:getCharVar("[hunt]status") >= 1 then
+     player:startEvent(info.event,0,0,3,1,0,0,player:getCurrency("valor_point"),player:getCharVar("[hunt]page"))]]
 
-  elseif (regimeType == tpz.regime.type.FIELDS and ENABLE_FIELD_MANUALS == 1) or (regimeType == tpz.regime.type.GROUNDS and ENABLE_GROUNDS_TOMES == 1) then
+    if (regimeType == tpz.regime.type.FIELDS and ENABLE_FIELD_MANUALS == 1) or (regimeType == tpz.regime.type.GROUNDS and ENABLE_GROUNDS_TOMES == 1) then
         local info = regimeInfo[regimeType].zone[player:getZoneID()]
 
         -- arg2 is a bitmask that controls which pages appear for examination

@@ -65,13 +65,11 @@ local function CharCreate(player)
     player:addKeyItem(nationInfo.map)
 
     -- add nation- and race-specific ring
-    if nation == raceInfo.homeNation and not player:hasItem(nationInfo.ring) then
-        player:addItem(nationInfo.ring)
-    end
+    player:addItem(nationInfo.ring)
 
     -- unlock advanced jobs
     if ADVANCED_JOB_LEVEL == 0 then
-        for i = tpz.job.PLD, tpz.job.SCH do
+        for i = tpz.job.PLD, tpz.job.RUN do
             player:unlockJob(i)
         end
     end
