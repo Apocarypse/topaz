@@ -13,28 +13,28 @@ local checks = {}
 -- Standard mob kill
 -- params = { ["mob"] = mob }
 checks.mob = function(self, player, params)
-    if self.reqs.mob and params.mob then
+    if self.mob and params.mob then
         return self.reqs.mob[params.mob:getID()] and 1 or 0
     end
     return 0
 end
 
 checks.family = function(self, player, params)
-    if self.reqs.family[params.mob:getFamily()] then
+    if self.family[params.mob:getFamily()] then
         return 1
     end
     return 0
 end
 
 checks.weather = function(self, player, params)
-    if self.reqs.weather[player:getWeather()] then
+    if self.weather[player:getWeather()] then
         return 5
     end
     return 0
 end
 
 checks.day = function(self, player, params)
-    if self.reqs.day[VanadielDayElement()] then
+    if self.day[VanadielDayElement()] then
         return 1
     end
     return 0
@@ -49,7 +49,7 @@ end
 
 local function masterCheck(self, player, params)
   for func in pairs(self.reqs) do
-      if func(self, player, params) == 0 then
+      if checks[func](self.reqs, player, params) == 0 then
           return 0
       end
   end
@@ -58,7 +58,7 @@ local function masterCheck(self, player, params)
   end
   local bonus = 0
   for func in pairs(self.opts) do
-      bonus = bonus + func(self, player, params)
+      bonus = bonus + checks[func](self.opts, player, params)
   end
   return bonus
 end
